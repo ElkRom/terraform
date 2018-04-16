@@ -39,5 +39,5 @@ resource "openstack_compute_instance_v2" "web_server" {
     fetch_chef_certificates = "true"
     ssl_verify_mode = ":verify_none"
 
-}
+	 }
 }
