@@ -6,10 +6,10 @@ variable "user_name" {
 	default = "admin"}
 
 variable "passw_instanc" {
-	default = "roman21ro"}
+	default = "********"}
 
 variable "user_instanc"{
-	default = "root"}
+	default = "*********"}
 
 variable "auth_url"{
-	default = "http://192.168.103.159:5000/v3"}
+	default = "http://*.*.*.*:5000/v3"}
