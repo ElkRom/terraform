@@ -1,0 +1,468 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+
+  "Description" : "Install VPC, pubsub, prisub",
+  
+  "Parameters" : {
+
+    "InstanceType" : {
+      "Description" : "WebServer EC2 instance type",
+      "Type" : "String",
+      "Default" : "t2.micro",
+	  "AllowedValues": [ "t1.micro", "t2.nano", "t2.micro", "t2.small", "t2.medium", "t2.large", "m1.small", "m1.medium", "m1.large", "m1.xlarge", "m2.xlarge", "m2.2xlarge",
+			"m2.4xlarge", "m3.medium", "m3.large", "m3.xlarge", "m3.2xlarge", "m4.large", "m4.xlarge", "m4.2xlarge", "m4.4xlarge", "m4.10xlarge", "c1.medium",
+			"c1.xlarge", "c3.large", "c3.xlarge", "c3.2xlarge", "c3.4xlarge", "c3.8xlarge", "c4.large", "c4.xlarge", "c4.2xlarge", "c4.4xlarge", 
+			"c4.8xlarge"],
+      "ConstraintDescription" : "must be a valid EC2 instance type."
+    },
+	
+	"DBName": {
+      "Default": "MyDatabase",
+      "Description" : "The database name",
+      "Type": "String",
+      "MinLength": "1",
+      "MaxLength": "64",
+      "AllowedPattern" : "[a-zA-Z][a-zA-Z0-9]*",
+      "ConstraintDescription" : "must begin with a letter and contain only alphanumeric characters."
+    },
+
+    "DBUser": {
+      "Default": "admin",
+      "Description" : "The database admin account username",
+      "Type": "String",
+      "MinLength": "1",
+      "MaxLength": "16",
+      "AllowedPattern" : "[a-zA-Z][a-zA-Z0-9]*",
+      "ConstraintDescription" : "must begin with a letter and contain only alphanumeric characters."
+    },
+
+    "DBPassword": {
+      "Default": "Roman14toy",
+      "Description" : "The database admin account password",
+      "Type": "String",
+      "MinLength": "1",
+      "MaxLength": "41",
+      "AllowedPattern" : "[a-zA-Z0-9]+",
+      "ConstraintDescription" : "must contain only alphanumeric characters."
+    },
+
+    "DBAllocatedStorage": {
+      "Default": "8",
+      "Description" : "The size of the database (Gb)",
+      "Type": "Number",
+      "MinValue": "5",
+      "MaxValue": "50",
+      "ConstraintDescription" : "must be between 5 and 50Gb."
+    },
+	
+	"DBInstanceClass": {
+      "Description" : "The database instance type",
+      "Type": "String",
+      "Default": "db.t2.micro",
+      "AllowedValues" : [ "db.t1.micro", "db.m1.small", "db.m1.medium", "db.m1.large", "db.m1.xlarge", "db.m2.xlarge", "db.m2.2xlarge",
+	  "db.m2.4xlarge", "db.m3.medium","db.r3.xlarge", "db.r3.2xlarge", "db.r3.4xlarge", "db.r3.8xlarge", "db.m2.xlarge", "db.m2.2xlarge", "db.m2.4xlarge",
+	  "db.cr1.8xlarge", "db.t2.micro", "db.t2.small", "db.t2.medium", "db.t2.large"]
+	},
+
+	
+	"KeyName": {
+      "Description": "Name of an existing EC2 KeyPair to enable SSH access to the instances",
+      "Type": "AWS::EC2::KeyPair::KeyName",
+	  "Default" : "bastion",
+      "ConstraintDescription" : "must be the name of an existing EC2 KeyPair."
+    }
+  },
+  
+  
+  
+  
+  "Resources" : {
+
+    "myVPC" : {
+      "Type" : "AWS::EC2::VPC",
+      "Properties" : {
+        "CidrBlock" : "10.0.0.0/16",
+        "Tags" : [ {"Key" : "Name", "Value" : "DevOps_Lv301" } ]
+      }
+    },
+
+    "PublicSubnet1" : {
+      "Type" : "AWS::EC2::Subnet",
+      "Properties" : {
+        "VpcId" : { "Ref" : "myVPC" },
+        "CidrBlock" : "10.0.11.0/24",
+		"AvailabilityZone" : "us-west-2a",
+		"MapPublicIpOnLaunch" : "true",
+        "Tags" : [ {"Key" : "Name", "Value" : "a_10.0.11.0_Public"} ]
+      }
+    },
+	 "PublicSubnet2" : {
+      "Type" : "AWS::EC2::Subnet",
+      "Properties" : {
+        "VpcId" : { "Ref" : "myVPC" },
+        "CidrBlock" : "10.0.21.0/24",
+		"AvailabilityZone" : "us-west-2b",
+		"MapPublicIpOnLaunch" : "true",
+        "Tags" : [ {"Key" : "Name", "Value" : "b_10.0.21.0_Public"} ]
+      }
+    },
+	
+	"PrivateSubnet1" : {
+      "Type" : "AWS::EC2::Subnet",
+      "Properties" : {
+        "VpcId" : { "Ref" : "myVPC" },
+        "CidrBlock" : "10.0.12.0/24",
+		"AvailabilityZone" : "us-west-2a",
+		"MapPublicIpOnLaunch" : "false",
+        "Tags" : [ {"Key" : "Name", "Value" : "a_10.0.12.0_Private" } ]
+      }
+    },
+	"PrivateSubnet2" : {
+      "Type" : "AWS::EC2::Subnet",
+      "Properties" : {
+        "VpcId" : { "Ref" : "myVPC" },
+        "CidrBlock" : "10.0.22.0/24",
+		"AvailabilityZone" : "us-west-2b",
+		"MapPublicIpOnLaunch" : "false",
+        "Tags" : [ {"Key" : "Name", "Value" : "b_10.0.22.0_Private" } ]
+      }
+    },
+
+    "InternetGateway" : {
+      "Type" : "AWS::EC2::InternetGateway",
+      "Properties" : {
+	  
+        "Tags" : [  {"Key" : "Name", "Value" : "Gate_DevOps_Lv301" } ]
+      }
+    },
+    "GatewayToInternet" : {
+       "Type" : "AWS::EC2::VPCGatewayAttachment",
+       "Properties" : {
+         "VpcId" : { "Ref" : "myVPC" },
+         "InternetGatewayId" : { "Ref" : "InternetGateway" }
+       }
+    },
+
+    "PublicRouteTable1" : {
+      "Type" : "AWS::EC2::RouteTable",
+      "Properties" : {
+        "VpcId" : {"Ref" : "myVPC"},
+        "Tags" : [ {"Key" : "Name", "Value" : "a_DevOps301_pub_route" } ]
+      }
+    },
+	
+   "PublicRouteTable2" : {
+      "Type" : "AWS::EC2::RouteTable",
+      "Properties" : {
+        "VpcId" : {"Ref" : "myVPC"},
+        "Tags" : [ {"Key" : "Name", "Value" : "b_DevOps301_pub_route" } ]
+      }
+    },
+	
+    "PublicRoute1" : {
+      "Type" : "AWS::EC2::Route",
+      "DependsOn" : "GatewayToInternet",
+      "Properties" : {
+        "RouteTableId" : { "Ref" : "PublicRouteTable1" },
+        "DestinationCidrBlock" : "0.0.0.0/0",
+        "GatewayId" : { "Ref" : "InternetGateway" }
+      }
+    },
+	
+	"PublicRoute2" : {
+      "Type" : "AWS::EC2::Route",
+      "DependsOn" : "GatewayToInternet",
+      "Properties" : {
+        "RouteTableId" : { "Ref" : "PublicRouteTable2" },
+        "DestinationCidrBlock" : "0.0.0.0/0",
+        "GatewayId" : { "Ref" : "InternetGateway" }
+      }
+    },
+	
+	"PublicSubnetRouteTableAssociate1" : {
+       "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+         "Properties" : {
+            "SubnetId" : { "Ref" : "PublicSubnet1" },
+            "RouteTableId" : { "Ref" : "PublicRouteTable1" }
+         }
+    },
+	
+	"PublicSubnetRouteTableAssociate2" : {
+       "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+         "Properties" : {
+            "SubnetId" : { "Ref" : "PublicSubnet2" },
+            "RouteTableId" : { "Ref" : "PublicRouteTable2" }
+         }
+    },
+	
+	"NatGateway1" : {
+		"DependsOn" : "GatewayToInternet",
+		"Type" : "AWS::EC2::NatGateway",
+		"Properties" : {
+			"AllocationId" : { "Fn::GetAtt" : ["EIP1", "AllocationId"]},
+			"SubnetId" : { "Ref" : "PublicSubnet1"},
+			"Tags" : [ {"Key" : "Name", "Value" : "a_NAT_DevOps_301"} ]
+		}
+	},
+	 
+	"NatGateway2" : {
+		"DependsOn" : "GatewayToInternet",
+		"Type" : "AWS::EC2::NatGateway",
+		"Properties" : {
+			"AllocationId" : { "Fn::GetAtt" : ["EIP2", "AllocationId"]},
+			"SubnetId" : { "Ref" : "PublicSubnet2"},
+			"Tags" : [ {"Key" : "Name", "Value" : "b_NAT_DevOps_301"} ]
+		}
+	},
+	"EIP1" : {
+		"Type" : "AWS::EC2::EIP",
+		"Properties" : {
+			"Domain" : "vpc"
+			
+		}
+	},
+	"EIP2" : {
+		"Type" : "AWS::EC2::EIP",
+		"Properties" : {
+			"Domain" : "vpc"
+			
+		}
+	},
+	"PrivateRouteTable1" : {
+      "Type" : "AWS::EC2::RouteTable",
+      "Properties" : {
+        "VpcId" : {"Ref" : "myVPC"},
+        "Tags" : [ {"Key" : "Name", "Value" : "DevOps_301_pri_route_a"} ]
+      }
+    },
+	
+	"PrivateRouteTable2" : {
+      "Type" : "AWS::EC2::RouteTable",
+      "Properties" : {
+        "VpcId" : {"Ref" : "myVPC"},
+        "Tags" : [ {"Key" : "Name", "Value" : "DevOps_301_pri_route_b"} ]
+      }
+    },
+	
+	"PrivateRoute1" : {
+		"Type" : "AWS::EC2::Route",
+		"Properties" : {
+		"RouteTableId" : { "Ref" : "PrivateRouteTable1" },
+		"DestinationCidrBlock" : "0.0.0.0/0",
+		"NatGatewayId" : { "Ref" : "NatGateway1" }
+		}
+	},
+	
+	"PrivateRoute2" : {
+		"Type" : "AWS::EC2::Route",
+		"Properties" : {
+		"RouteTableId" : { "Ref" : "PrivateRouteTable2" },
+		"DestinationCidrBlock" : "0.0.0.0/0",
+		"NatGatewayId" : { "Ref" : "NatGateway2" }
+		}
+	},
+		
+	"1PrivateSubnetRouteTableAssociate" : {
+       "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+         "Properties" : {
+            "SubnetId" : { "Ref" : "PrivateSubnet1" },
+            "RouteTableId" : { "Ref" : "PrivateRouteTable1" }
+        }
+    },
+	
+	"2PrivateSubnetRouteTableAssociate" : {
+       "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+         "Properties" : {
+            "SubnetId" : { "Ref" : "PrivateSubnet2" },
+            "RouteTableId" : { "Ref" : "PrivateRouteTable2" }
+        }
+    },
+	
+	"InstanceSecurityGroup" : {
+		"Type" : "AWS::EC2::SecurityGroup",
+		"Properties" : {
+			"GroupName" : "InstanceSecurityGroup",
+			"GroupDescription" : "Allow ssh to client host",
+			"VpcId" : {"Ref" : "myVPC"},
+			"Tags" : [ {"Key" : "Name", "Value" : "Instance_DevOps_301"} ],
+			"SecurityGroupIngress" : [
+			{"IpProtocol" : "tcp","FromPort" : "22","ToPort" : "22","CidrIp" : "0.0.0.0/0" },
+			{"IpProtocol" : "tcp","FromPort" : "8080","ToPort" : "8080","CidrIp" : "0.0.0.0/0" },
+			{"IpProtocol" : "tcp","FromPort" : "80","ToPort" : "80","CidrIp" : "0.0.0.0/0" }
+			],
+			"SecurityGroupEgress" : [
+			{ "IpProtocol" : "-1", "CidrIp" : "0.0.0.0/0"} ]
+        }
+    },
+	
+	"DBSecurityGroup" : {
+		"Type" : "AWS::EC2::SecurityGroup",
+		"Properties" : {
+			"GroupName" : "DBSecurityGroup",
+			"GroupDescription" : "DB connection host",
+			"VpcId" : {"Ref" : "myVPC"},
+			"Tags" : [ {"Key" : "Name", "Value" : "DB_DevOps_301"} ],
+			"SecurityGroupIngress" : [{
+				"IpProtocol" : "tcp", "FromPort" : "3306", "ToPort" : "3306", "CidrIp" : "0.0.0.0/0"}
+			]
+			
+        }
+    },
+	
+	"ELB" : {
+      "Type" : "AWS::ElasticLoadBalancing::LoadBalancer",
+      "Properties" : {
+        "Subnets" : [{ "Ref" : "PublicSubnet1"}, { "Ref" : "PublicSubnet2"}],
+		"CrossZone" :"true",
+		"Scheme" : "internet-facing",
+        "Listeners" : [ {
+			"LoadBalancerPort" : "80",
+			"InstancePort" : "8080",
+			"Protocol" : "tcp"
+		} ],
+		"HealthCheck" : {
+			"Target" : "TCP:8080",
+			"HealthyThreshold" : "4",
+			"UnhealthyThreshold" : "4",
+			"Interval" : "20",
+			"Timeout" : "5"
+		},
+		"SecurityGroups" : [{"Ref": "InstanceSecurityGroup"}],
+		"LoadBalancerName" : "WebAppBalancer"
+		}
+    
+    },
+	
+	"WebServerGroup": {
+      "Type": "AWS::AutoScaling::AutoScalingGroup",
+      "Properties": {
+	    "AutoScalingGroupName" : "WebServer",
+        "VPCZoneIdentifier" : [{ "Ref" : "PrivateSubnet1"}, { "Ref" : "PrivateSubnet2"}],
+        "LaunchConfigurationName": { "Ref": "LaunchConfig" },
+        "MinSize": "1",
+		"DesiredCapacity" : "2",
+        "MaxSize": "4",
+		"LoadBalancerNames" :[{ "Ref": "ELB" }],
+		"HealthCheckGracePeriod" : 60
+		
+		}
+    },
+
+    "LaunchConfig": {
+      "Type": "AWS::AutoScaling::LaunchConfiguration",
+      "Properties": {
+        "KeyName": { "Ref": "KeyName" },
+        "ImageId": "ami-57a8c02f",
+		"InstanceType" : { "Ref" : "InstanceType" },
+        "SecurityGroups": [ { "Ref": "InstanceSecurityGroup" } ]
+        }  
+    },
+	
+	"WebServerScaleUpPolicy" : {
+      "Type" : "AWS::AutoScaling::ScalingPolicy",
+      "Properties" : {
+        "AdjustmentType" : "ChangeInCapacity",
+        "AutoScalingGroupName" : { "Ref" : "WebServerGroup" },
+        "Cooldown" : "120",
+        "ScalingAdjustment" : "1"
+      }
+    },
+    "WebServerScaleDownPolicy" : {
+      "Type" : "AWS::AutoScaling::ScalingPolicy",
+      "Properties" : {
+        "AdjustmentType" : "ChangeInCapacity",
+        "AutoScalingGroupName" : { "Ref" : "WebServerGroup" },
+        "Cooldown" : "120",
+        "ScalingAdjustment" : "-1"
+      }
+    },
+
+    "CPUAlarmHigh": {
+     "Type": "AWS::CloudWatch::Alarm",
+     "Properties": {
+        "AlarmDescription": "Scale-up if CPU > 80% for 5 minutes",
+        "MetricName": "CPUUtilization",
+        "Namespace": "AWS/EC2",
+        "Statistic": "Average",
+        "Period": "300",
+        "EvaluationPeriods": "1",
+        "Threshold": "80",
+        "AlarmActions": [ { "Ref": "WebServerScaleUpPolicy" } ],
+        "Dimensions": [
+          {
+            "Name": "AutoScalingGroupName",
+            "Value": { "Ref": "WebServerGroup" }
+          }
+        ],
+        "ComparisonOperator": "GreaterThanThreshold"
+      }
+    },
+	
+    "CPUAlarmLow": {
+     "Type": "AWS::CloudWatch::Alarm",
+     "Properties": {
+        "AlarmDescription": "Scale-down if CPU < 60% for 2 minutes",
+        "MetricName": "CPUUtilization",
+        "Namespace": "AWS/EC2",
+        "Statistic": "Average",
+        "Period": "60",
+        "EvaluationPeriods": "2",
+        "Threshold": "60",
+        "AlarmActions": [ { "Ref": "WebServerScaleDownPolicy" } ],
+        "Dimensions": [
+          {
+            "Name": "AutoScalingGroupName",
+            "Value": { "Ref": "WebServerGroup" }
+          }
+        ],
+        "ComparisonOperator": "LessThanThreshold"
+      }
+    },
+
+	"DBSubnetGroup":{
+    "Type" : "AWS::RDS::DBSubnetGroup",
+    "Properties" : {
+      "DBSubnetGroupDescription" : "For OMS",
+      "SubnetIds" : [{ "Ref" : "PrivateSubnet1"}, { "Ref" : "PrivateSubnet2"}]  
+		}
+	},    
+	
+	
+   	"RDSDBInstance" : {
+	"Type" : "AWS::RDS::DBInstance",
+	"Properties" : {
+		"Engine" : "mariadb",
+		"DBName" : { "Ref" : "DBName" },
+		"MasterUsername" : { "Ref" : "DBUser" },
+		"MasterUserPassword" : { "Ref" : "DBPassword" },
+		"PubliclyAccessible" : "false", 
+		"DBInstanceClass" : {"Ref": "DBInstanceClass"},
+		"VPCSecurityGroups" : [{ "Ref" : "DBSecurityGroup"}],
+		"AllocatedStorage" : { "Ref" : "DBAllocatedStorage"},
+		"DBSubnetGroupName" :{ "Ref" : "DBSubnetGroup"},
+		"DBInstanceIdentifier": "OMS"
+		}
+	}
+	
+	
+	
+	
+},
+
+ "Outputs": {
+    "URL": {
+      "Description": "URL of the website",
+      "Value": { "Fn::Join": [ "", [ "http://", { "Fn::GetAtt": [ "ELB", "DNSName" ] } ] ] }
+    }
+  }
+  
+	
+	
+	
+	
+
+
+
+	
+	
+}
