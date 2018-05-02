@@ -459,7 +459,7 @@
           "Value" : "Master",
           "PropagateAtLaunch" : "true"}
 		    ]   
-		}
+      }
 		
     },
 
@@ -473,8 +473,6 @@
         }  
     }
 	
-	
-	
 },
 
  "Outputs": {
@@ -483,14 +481,6 @@
       "Value": { "Fn::Join": [ "", [ "http://", { "Fn::GetAtt": [ "ELB", "DNSName" ] } ] ] }
     }
   }
-  
-	
-	
-	
-	
-
-
-
-	
+ 
 	
 }
