@@ -1,5 +1,5 @@
 variable "password" {
-	default = "roman21*ro"
+	default = "romanro"
 }
 
 variable "user_name" {
